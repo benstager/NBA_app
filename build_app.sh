@@ -1,3 +1,3 @@
 pip install -r requirements.txt
 
-gunicorn -b 0.0.0.0:10000 app:app
+gunicorn -b 0.0.0.0:10000 baseline:app
