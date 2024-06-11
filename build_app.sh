@@ -1,3 +1,3 @@
 pip install -r requirements.txt
 
-python3 baseline.py
+gunicorn -b 0.0.0.0:10000 app:app
