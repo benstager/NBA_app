@@ -4,14 +4,15 @@ from nba_api.stats.static import teams
 from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 import datetime
+from NBA_secrets import *
 
-database_type = 'postgresql'
-dbapi = 'psycopg2'
-endpoint = 'nba-ml-database.cdyyu2ws4399.us-east-2.rds.amazonaws.com'
-user = 'postgres'
-password = 'pacman561'
-port = 5432
-database = 'postgresNBA'
+database_type = database_type
+dbapi = dbapi
+endpoint = endpoint
+user = user
+password = password
+port = port
+database = database
 
 app = Flask(__name__)
 
@@ -24,9 +25,32 @@ engine = create_engine(DATABASE_URL)
 # Load data from the database
 all_games_df = pd.read_sql("SELECT * FROM all_games_sorted", engine)
 
+# find games by year
 def find_games_by_year(all_games_df, date):
     games_year = all_games_df[all_games_df['GAME_DATE'] == date]
     return games_year
+
+# find games by date
+def find_games_by_team(all_games_df, date):
+    games_team = all_games_df[all_games_df['TEAM_ABBREVIATION'] == date]
+
+# find games by a general criteria
+def find_games_by_general_criteria(all_games_df, criteria):
+    frames = []
+    for i in all_games_df.columns:
+        for j in all_games_df[i]:
+            if criteria in i or criteria == i:
+                frames.append(all_games_df[all_games_df[i] == j])
+    
+    return pd.concat(frames)
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

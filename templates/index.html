@@ -21,6 +21,29 @@
             max-width: 800px;
             margin: auto;
         }
+        nav {
+            margin-top: 20px;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            text-align: center;
+        }
+        nav ul li {
+            display: inline;
+            margin-right: 10px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        nav ul li a:hover {
+            background-color: #007bff;
+            color: white;
+        }
         form {
             margin-top: 20px;
         }
@@ -56,7 +79,16 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="title">Hoopd! (coming soon...)</h1>
+        <h1 class="title">Buzzr! (coming soon...)</h1>
+        
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+            </ul>
+        </nav>
+
         <form action="{{ url_for('index') }}" method="POST">
             <label for="date">Enter a date (YYYY-MM-DD):</label>
             <input type="text" id="date" name="date" required>
