@@ -6,7 +6,6 @@ from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 import datetime
 from NBA_secrets import *
-from langchain.llms import OpenAI
 from OPENAI_KEY import api_key
 
 database_type = database_type
