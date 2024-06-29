@@ -8,21 +8,28 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
         }
         h1.title {
-            font-size: 2.5em; /* Adjust the size as needed */
+            font-size: 2.5em;
             text-decoration: underline;
-            text-align: left;
+            text-align: center;
             margin: 0;
             padding-bottom: 10px;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
-        }
-        nav {
-            margin-top: 20px;
+        h1.body {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #333;
         }
         nav ul {
             list-style: none;
@@ -44,29 +51,45 @@
             background-color: #007bff;
             color: white;
         }
-        form {
-            margin-top: 20px;
+        .search-bar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
         }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input[type="text"], input[type="number"] {
+        .search-bar-container form {
             width: 100%;
-            padding: 5px;
-            margin-top: 5px;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
         }
-        button {
-            margin-top: 15px;
-            padding: 10px 15px;
+        .search-bar-container input[type="text"] {
+            width: calc(100% - 110px);
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #007bff;
+            border-radius: 5px 0 0 5px;
+            outline: none;
+        }
+        .search-bar-container button {
+            padding: 15px;
+            font-size: 1.2em;
             background-color: #007bff;
             color: white;
-            border: none;
-            border-radius: 5px;
+            border: 2px solid #007bff;
+            border-radius: 0 5px 5px 0;
             cursor: pointer;
+            outline: none;
         }
-        button:hover {
+        .search-bar-container button:hover {
             background-color: #0056b3;
+        }
+        .results-container {
+            margin-top: 40px;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
         ul {
             list-style: none;
@@ -75,12 +98,28 @@
         li {
             margin-bottom: 10px;
         }
+        .submit-button {
+            padding: 15px;
+            font-size: 1.2em;
+            background-color: #007bff;
+            color: white;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            cursor: pointer;
+            outline: none;
+            display: block;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="title">Buzzr! The NBA ratings app. </h1>
-        <h1 class="body"> Buzzr is an application designed to let NBA fans of all kinds to rate their favorite games, players, and seasons. Try below to find a game you love (or hate!)</h1>
+        <h1 class="title">Buzzr! The NBA ratings app</h1>
+        <h1 class="body">Buzzr is an application designed to let NBA fans rate their favorite games, players, and seasons. Find a game you love (or hate!) below.</h1>
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
@@ -89,35 +128,32 @@
             </ul>
         </nav>
 
-        <form action="{{ url_for('index') }}" method="POST">
-            <label for="date">Enter a date (YYYY-MM-DD):</label>
-            <input type="text" id="date" name="date" required>
-            <button type="submit">Submit</button>
-        </form>
+        <div class="search-bar-container">
+            <form action="{{ url_for('index') }}" method="POST">
+                <input type="text" id="criteria" name="criteria" placeholder="Enter a date (YYYY-MM-DD) or team abbreviation" required>
+                <button type="submit">Search</button>
+            </form>
+        </div>
 
-        {% if games is not none %}
-            {% if games %}
-                <h2>Games on {{ date }}</h2>
-                <form action="{{ url_for('rate') }}" method="POST">
-                    <label for="first_name">First Name:</label>
-                    <input type="text" id="first_name" name="first_name" required>
-                    <label for="last_name">Last Name:</label>
-                    <input type="text" id="last_name" name="last_name" required>
-                    <ul>
+        {% if games %}
+        <div class="results-container">
+            <h2>Games matching "{{ criteria }}"</h2>
+            <form action="{{ url_for('rate') }}" method="POST">
+                <input type="text" id="first_name" name="first_name" placeholder="Your first name" required>
+                <input type="text" id="last_name" name="last_name" placeholder="Your last name" required>
+                <ul>
                     {% for game in games %}
                         <li>
-                            {{ loop.index }}. {{ game['MATCHUP'] }} on {{ game['GAME_DATE'] }} ({{ game['OUTCOME'] }})
+                            {{ game['MATCHUP'] }} on {{ game['GAME_DATE'] }} ({{ game['OUTCOME'] }})
                             <input type="hidden" name="game_{{ loop.index }}" value="{{ game['GAME_DATE'] }}|{{ game['MATCHUP'] }}|{{ game['OUTCOME'] }}">
                             <label for="rating_{{ loop.index }}">Rating (1-10):</label>
                             <input type="number" id="rating_{{ loop.index }}" name="rating_{{ loop.index }}" min="1" max="10">
                         </li>
                     {% endfor %}
-                    </ul>
-                    <button type="submit">Submit Ratings</button>
-                </form>
-            {% else %}
-                <p>No games were played on this date. Please try another date.</p>
-            {% endif %}
+                </ul>
+                <button type="submit" class="submit-button">Submit Ratings</button>
+            </form>
+        </div>
         {% endif %}
     </div>
 </body>
