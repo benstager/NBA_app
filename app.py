@@ -1,3 +1,4 @@
+from NBA_secrets import *
 from flask import Flask, render_template, request
 from sqlalchemy import create_engine
 from nba_api.stats.static import teams
@@ -5,6 +6,8 @@ from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 import datetime
 from NBA_secrets import *
+from langchain.llms import OpenAI
+from OPENAI_KEY import api_key
 
 database_type = database_type
 dbapi = dbapi
@@ -25,52 +28,55 @@ engine = create_engine(DATABASE_URL)
 # Load data from the database
 all_games_df = pd.read_sql("SELECT * FROM all_games_sorted", engine)
 
+# game of the day
+#llm = OpenAI(api_key='', max_tokens=1000)
+
 # find games by year
+
 def find_games_by_year(all_games_df, date):
     games_year = all_games_df[all_games_df['GAME_DATE'] == date]
     return games_year
 
-# find games by date
-def find_games_by_team(all_games_df, date):
-    games_team = all_games_df[all_games_df['TEAM_ABBREVIATION'] == date]
-
-# find games by a general criteria
+# Function to find games based on general criteria
 def find_games_by_general_criteria(all_games_df, criteria):
-    frames = []
-    for i in all_games_df.columns:
-        for j in all_games_df[i]:
-            if criteria in i or criteria == i:
-                frames.append(all_games_df[all_games_df[i] == j])
-    
-    return pd.concat(frames)
+    if criteria:
+        filtered_df = all_games_df[
+            (all_games_df['GAME_DATE'] == criteria) |
+            (all_games_df['AWAY_TEAM'] == criteria.upper()) |
+            (all_games_df['HOME_TEAM'] == criteria.upper())
+        ]
+        return filtered_df.to_dict(orient='records')
+    return []
 
-@app.route('/about')
-def about():
-    return render_template('about.html')
+# Function to save ratings to the database
+def save_ratings_to_database(ratings):
+    if ratings:
+        ratings_df = pd.DataFrame(ratings)
+        ratings_df.to_sql("user_rankings_new", engine, schema='public', index=False, if_exists='append')
+        return True
+    return False
 
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
-
+# Route to render the index page and handle search form submission
 @app.route('/', methods=['GET', 'POST'])
 def index():
     games = None
-    date = None
+    criteria = None
+
     if request.method == 'POST':
-        date = request.form['date']
+        criteria = request.form['criteria']
         try:
-            date = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+            # Try parsing the criteria as a date
+            criteria_date = datetime.datetime.strptime(criteria, '%Y-%m-%d').date()
+            criteria_str = str(criteria_date)
         except ValueError:
-            return "Invalid date format. Please enter the date in YYYY-MM-DD format."
+            # If it fails, use it as a string for team abbreviations
+            criteria_str = criteria.upper()
 
-        games_date = find_games_by_year(all_games_df, str(date))
-        if not games_date.empty:
-            games = games_date.to_dict(orient='records')
-        else:
-            games = []
+        games = find_games_by_general_criteria(all_games_df, criteria_str)
 
-    return render_template('index.html', games=games, date=date)
+    return render_template('index.html', games=games, criteria=criteria)
 
+# Route to handle ratings submission
 @app.route('/rate', methods=['POST'])
 def rate():
     ratings = []
@@ -78,32 +84,28 @@ def rate():
     last_name = request.form['last_name']
     rating_date = pd.Timestamp.now()
 
-    ratings_filled = False
+    # Iterate through the form data to find ratings
     for game_id, rating in request.form.items():
-        if game_id.startswith('rating_'):
+        if game_id.startswith('rating_') and rating.strip():  # Check if rating is provided
             game_index = int(game_id.split('_')[1])
             game = request.form[f'game_{game_index}']
-            if rating:  # Check if the rating is provided
-                rating = int(rating)
-                game_date, matchup, outcome = game.split('|')
-                ratings.append({
-                    'Matchup': matchup,
-                    'Game date': game_date,
-                    'Team rated': outcome,
-                    'Win or loss?': outcome,
-                    'Rating given': rating,
-                    'User_First': first_name,
-                    'User_Last': last_name,
-                    'Date of rating': rating_date
-                })
-                ratings_filled = True
+            rating = int(rating.strip())
+            game_date, matchup, outcome = game.split('|')
+            ratings.append({
+                'Matchup': matchup,
+                'Game date': game_date,
+                'Team rated': outcome,
+                'Win or loss?': outcome,
+                'Rating given': rating,
+                'User_First': first_name,
+                'User_Last': last_name,
+                'Date of rating': rating_date
+            })
 
-    if ratings_filled:
-        ratings_df = pd.DataFrame(ratings)
-        ratings_df.to_sql("user_rankings_new", engine, schema='public', index=False, if_exists='append')
-        return "Thanks for helping! Your ratings have been recorded."
+    if save_ratings_to_database(ratings):
+        return "Thanks for your ratings! Ratings have been recorded."
     else:
-        return "Please provide at least one rating."
+        return "Please provide at least one valid rating."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
